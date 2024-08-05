@@ -132,7 +132,6 @@ SELECT *, ROW_NUMBER() OVER (
                          SaleDate,
                          LegalReference
                          ORDER BY UniqueID) AS row_num
-
 FROM nashville_housing_data
 )
 SELECT *
@@ -149,15 +148,15 @@ JOIN (
         SELECT UniqueID,
                ROW_NUMBER() OVER (
                PARTITION BY ParcelID,
-							PropertyAddress,
+			    PropertyAddress,
                             SaleDate,
                             SalePrice,
                             LegalReference
-							ORDER BY UniqueID) AS row_num
+			    ORDER BY UniqueID) AS row_num
 		FROM Nashville_Housing_Data
-    ) temp
+    ) AS temp
     WHERE temp.row_num > 1
-) b ON a.UniqueID = b.UniqueID;
+) AS b ON a.UniqueID = b.UniqueID;
 
 -- Now the dataset is finally standardized and cleaned as far as possible. There are still a lot of NULL values, especially in the OwnerName columns, which therefore has an influence on Owner_Address_Street etc. To clean it up even further you might consider to drop those columns as well if necessary.
 
