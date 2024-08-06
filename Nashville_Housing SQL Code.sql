@@ -1,7 +1,46 @@
+/* Since there was trouble with importing the Excel File to the SQL Database, the data was written to a csv-file, which then was imported to MySQL.
+This was done by using Python and the following code:
+
+import pandas as pd
+import numpy as np
+from config import EXCEL_FILE_PATH
+
+# Read Excel File
+url = EXCEL_FILE_PATH
+# Turn the Excel File into a Dataframe
+df = pd.read_excel(url)
+
+# Create an empty list
+y = []
+
+# Turn all nan values into NULL values, so MySQL can handle them, otherwise there might be problems transfering them
+df = df.replace({np.nan: "NULL"})
+
+# Make sure the data is of correct type for SQL to handle them
+for col in df.select_dtypes(include=[np.number]).columns:
+    df[col] = df[col].astype(object)
+
+# Loop over each row in the DataFrame
+for i in range(len(df)):
+    row = df.iloc[i]
+    # Make sure to delete duplicates
+    x = tuple(row)
+    # Add each row to the list
+    y.append(x)
+
+# Create a csv-file to be able to import it to SQL
+with open("housing.txt", "w") as file:
+    # Loop over each instance in the list
+    for item in y:
+        # Write the file with each instance as a string, separated by a comma and a line break
+        file.write(str(item) + "," + "\n")
+
+# Continue with SQL statements
+*/
+
 /* 
 Cleaning Data with SQL Queries
 Excel File which will be cleaned up: https://github.com/AlexTheAnalyst/PortfolioProjects/blob/main/Nashville%20Housing%20Data%20for%20Data%20Cleaning%20(reuploaded).xlsx
-Side Note: In an already existing database, these steps should not be required since the database is already normalized
 */
 
 /* DEACTIVATING SAFE MODE 
@@ -110,7 +149,7 @@ Since we do have way more "Yes" (4291) and "No" (49469) values, we should unify 
 UPDATE nashville_housing_data
 SET SoldAsVacant = 
 CASE 
-	WHEN SoldAsVacant = "Y" THEN "Yes"
+    WHEN SoldAsVacant = "Y" THEN "Yes"
     WHEN SoldAsVacant = "N" THEN "No"
     ELSE SoldAsVacant
     END
@@ -127,11 +166,11 @@ DROP COLUMN OwnerAddress;
 WITH RowNumCTE AS(
 SELECT *, ROW_NUMBER() OVER (
 			PARTITION BY ParcelID,
-						 PropertyAddress,
-                         SalePrice,
-                         SaleDate,
-                         LegalReference
-                         ORDER BY UniqueID) AS row_num
+			PropertyAddress,
+                        SalePrice,
+                        SaleDate,
+                        LegalReference
+                        ORDER BY UniqueID) AS row_num
 FROM nashville_housing_data
 )
 SELECT *
@@ -158,5 +197,5 @@ JOIN (
     WHERE temp.row_num > 1
 ) AS b ON a.UniqueID = b.UniqueID;
 
--- Now the dataset is finally standardized and cleaned as far as possible. There are still a lot of NULL values, especially in the OwnerName columns, which therefore has an influence on Owner_Address_Street etc. To clean it up even further you might consider to drop those columns as well if necessary.
+-- Now the dataset is finally standardized and cleaned. There are still a lot of NULL values, especially in the OwnerName columns, which therefore has an influence on Owner_Address_Street etc. To clean it up even further you might consider to drop those columns as well if necessary.
 
